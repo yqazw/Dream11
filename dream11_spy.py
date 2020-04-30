@@ -12,6 +12,9 @@ import seaborn as sns
 match=pd.read_csv('matches.csv')
 deliveries=pd.read_csv('deliveries.csv')
 deliveries=deliveries
+##Initializing Required Variables
+Teams = list(deliveries['batting_team'].drop_duplicates())
+
 #Function to add batsman_points
 def batsman_point_func(x):
     if x ==6:
@@ -200,3 +203,19 @@ xyz=sns.scatterplot(x=temp.Player,y=temp.Economy,data=temp)
 [tick.set_rotation(30) for tick in xyz.get_xticklabels()]
 abc=sns.lineplot(x=temp.Player,y=temp.Strike_Rate,data=temp)
 [tick.set_rotation(30) for tick in abc.get_xticklabels()]
+del temp
+
+
+#Batting_Order
+temp=deliveries[['match_id','inning','batting_team','batsman']]
+temp.drop_duplicates(inplace=True)
+temp.reset_index(inplace=True)
+del temp['index']
+temp['index']=temp.index
+
+temp['batting_order']= temp.groupby(['match_id','inning','batting_team']).index.rank(method='first')
+del temp['index']
+
+temp['Joined_Field'] = temp[['batting_order', 'batsman']].apply(lambda x: '-'.join((x).astype(str)), axis=1)
+temp[(temp['batting_team']=='Chennai Super Kings') & (temp['batting_order']==2)]['Joined_Field'].value_counts().head(1)
+    
