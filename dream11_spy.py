@@ -1,5 +1,3 @@
-
-
 # -*- coding: utf-8 -*-
 """
 Spyder Editor
@@ -13,7 +11,7 @@ match=pd.read_csv('matches.csv')
 deliveries=pd.read_csv('deliveries.csv')
 deliveries=deliveries
 ##Initializing Required Variables
-Teams = list(deliveries['batting_team'].drop_duplicates())
+Team_Names = list(deliveries['batting_team'].drop_duplicates())
 
 #Function to add batsman_points
 def batsman_point_func(x):
@@ -206,7 +204,7 @@ abc=sns.lineplot(x=temp.Player,y=temp.Strike_Rate,data=temp)
 del temp
 
 
-#Batting_Order
+#Working for Batting_Order
 temp=deliveries[['match_id','inning','batting_team','batsman']]
 temp.drop_duplicates(inplace=True)
 temp.reset_index(inplace=True)
@@ -217,5 +215,26 @@ temp['batting_order']= temp.groupby(['match_id','inning','batting_team']).index.
 del temp['index']
 
 temp['Joined_Field'] = temp[['batting_order', 'batsman']].apply(lambda x: '-'.join((x).astype(str)), axis=1)
-temp[(temp['batting_team']=='Chennai Super Kings') & (temp['batting_order']==2)]['Joined_Field'].value_counts().head(1)
+temp[(temp['batting_team']=='Chennai Super Kings') & (temp['batting_order']==2)]['Joined_Field'].value_counts().head(1).reset_index()['index']
     
+
+#Teams and Batting Order
+Teams_Info = pd.DataFrame(columns=['Team','Position','Player'])
+for i in Team_Names:
+    for j in range(1,11):
+        x=1
+        flag=False
+        while(flag is False):
+            temporary=str(temp[(temp['batting_team']==i) & (temp['batting_order']==j)]['Joined_Field'].value_counts().head(x).tail(1).index.values)
+            name_of_player = str(temp[temp['Joined_Field']==temporary[2:-2]]['batsman'].drop_duplicates().values)[2:-2]
+            variable_value=(Teams_Info[(Teams_Info['Team']==i) & (Teams_Info['Player']==name_of_player)])
+            if not variable_value.empty:
+                x+=1
+            else:
+                flag=True
+                break
+        Teams_Info=Teams_Info.append({'Team':i,'Position':j,'Player':name_of_player},ignore_index=True)
+
+del temp,name_of_player,temporary
+del flag,variable_value
+del x,y,i,j
