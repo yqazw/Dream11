@@ -215,7 +215,6 @@ temp['batting_order']= temp.groupby(['match_id','inning','batting_team']).index.
 del temp['index']
 
 temp['Joined_Field'] = temp[['batting_order', 'batsman']].apply(lambda x: '-'.join((x).astype(str)), axis=1)
-temp[(temp['batting_team']=='Chennai Super Kings') & (temp['batting_order']==2)]['Joined_Field'].value_counts().head(1).reset_index()['index']
     
 
 #Teams and Batting Order
@@ -235,6 +234,22 @@ for i in Team_Names:
                 break
         Teams_Info=Teams_Info.append({'Team':i,'Position':j,'Player':name_of_player},ignore_index=True)
 
-del temp,name_of_player,temporary
+del name_of_player,temporary
 del flag,variable_value
 del x,y,i,j
+
+#Positional Averages of Batsmen
+temp1=deliveries[['match_id','inning','batsman','batsman_runs']]
+temp1 = temp1.groupby(['match_id','inning','batsman'],as_index=False).agg({'batsman_runs':'sum'})
+temp['New_Joined_Field'] = temp[['match_id', 'inning', 'batsman']].apply(lambda x: '-'.join((x).astype(str)), axis=1)
+temp1['New_Joined_Field'] = temp1[['match_id', 'inning', 'batsman']].apply(lambda x: '-'.join((x).astype(str)), axis=1)
+
+xyz=pd.merge(left=temp,right=temp1,left_on='New_Joined_Field',right_on='New_Joined_Field',how='outer')
+abc = abc[['batsman_x','batting_order','batsman_runs']]
+
+#Positional Average Table >>> abc
+abc = abc.groupby(['batsman_x','batting_order'],as_index=False).agg({'batsman_runs':'mean'})
+
+Player_Positions = abc[abc.index .isin(abc.groupby('batsman_x',as_index=False)['batsman_runs'].idxmax())]
+Player_Positions = Player_Positions.reset_index()
+del Player_Positions['index']
