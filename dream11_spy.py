@@ -7,6 +7,8 @@ This is a temporary script file.
 import numpy as np
 import pandas as pd 
 import seaborn as sns
+import matplotlib.pyplot as plt
+
 match=pd.read_csv('matches.csv')
 deliveries=pd.read_csv('deliveries.csv')
 deliveries=deliveries
@@ -121,10 +123,6 @@ List1=list(Top_Rank_Players['Player_Name'])
 temp = Rank[Rank['Player_Name'].isin(List1)]
 
 #################################################
-
-sns.lineplot(x=temp.match_id,y=temp.Batsman_points,data=temp,hue=temp.Player_Name)
-sns.lineplot(x=temp.match_id,y=temp.Bowlers_Point,data=temp,hue=temp.Player_Name)
-sns.lineplot(x=temp.match_id,y=temp.Total_Points,data=temp,hue=temp.Player_Name)
 
 #Most Sixes Dataset
 sixes = pd.DataFrame(deliveries[deliveries['batsman_runs']==6]['batsman'].value_counts())
@@ -253,3 +251,11 @@ abc = abc.groupby(['batsman_x','batting_order'],as_index=False).agg({'batsman_ru
 Player_Positions = abc[abc.index .isin(abc.groupby('batsman_x',as_index=False)['batsman_runs'].idxmax())]
 Player_Positions = Player_Positions.reset_index()
 del Player_Positions['index']
+
+lmn=pd.merge(xyz,match[['id','season']],left_on='match_id_x',right_on='id',how='outer')
+
+Position_Importance = lmn[['season','batting_order','batsman_runs']]
+Position_Importance=Position_Importance.groupby(['season','batting_order'],as_index=False).agg({'batsman_runs':'sum'})
+f, ax = plt.subplots(figsize=(10, 10))
+sns.lineplot(x='batting_order',y='batsman_runs',data=Position_Importance)#,hue='season')
+
