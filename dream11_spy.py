@@ -253,9 +253,21 @@ Player_Positions = Player_Positions.reset_index()
 del Player_Positions['index']
 
 lmn=pd.merge(xyz,match[['id','season']],left_on='match_id_x',right_on='id',how='outer')
-
 Position_Importance = lmn[['season','batting_order','batsman_runs']]
 Position_Importance=Position_Importance.groupby(['season','batting_order'],as_index=False).agg({'batsman_runs':'sum'})
 f, ax = plt.subplots(figsize=(10, 10))
 sns.lineplot(x='batting_order',y='batsman_runs',data=Position_Importance)#,hue='season')
 
+
+######### 
+lmn.drop(['match_id_y','inning_y','New_Joined_Field','Joined_Field','batsman_y','id'],axis=1,inplace=True)
+Rank['match_id'] = Rank['match_id'].astype(int)
+Rank['match_id'].dtype
+lmn['new_field']= lmn['match_id_x'].astype(str)+'-'+lmn['batsman_x']
+Rank['new_field']= Rank['match_id'].astype(str)+'-'+Rank['Player_Name']
+lmn=pd.merge(lmn,Rank,left_on='new_field',right_on='new_field')
+lmn=lmn[['season','match_id','inning_x','batting_team','Player_Name','batting_order','batsman_runs','Batsman_points','new_field']]
+del Rank['new_field']
+
+f, ax = plt.subplots(figsize=(15, 10))
+sns.lineplot(x='match_id',y='batsman_runs',data=lmn,hue='Player_Name')
