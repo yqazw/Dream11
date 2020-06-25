@@ -66,6 +66,47 @@ def fielders_point_func(x):
 deliveries["Fielders_Point"]=deliveries["dismissal_kind"].apply(fielders_point_func)
 deliveries.tail()
 
+#Function to add Season
+def Add_season(x):
+    if x<60:
+        x=2017
+        return x
+    elif 59<x<118:
+        x=2008
+        return x
+    elif 117<x<175:
+        x=2009
+        return x
+    elif 174<x<235:
+        x=2010
+        return x
+    elif 234<x<308:
+        x=2011
+        return x
+    elif 307<x<382:
+        x=2012
+        return x
+    elif 381<x<458:
+        x=2013
+        return x
+    elif 457<x<518:
+        x=2014
+        return x
+    elif 517<x<577:
+        x=2015
+        return x
+    elif 576<x<637:
+        x=2016
+        return x
+    elif 636<x<697:
+        x=2018
+        return x
+    elif x>696:
+        x=2019
+        return x
+    
+deliveries["Season"]=deliveries["match_id"].apply(Add_season)
+
 #New DataFrame for Batsman_points
 bat_points=deliveries.groupby(['match_id','batsman'], as_index=False)
 batting_points=pd.DataFrame(bat_points.Batsman_points.sum())
@@ -252,22 +293,39 @@ Player_Positions = abc[abc.index .isin(abc.groupby('batsman_x',as_index=False)['
 Player_Positions = Player_Positions.reset_index()
 del Player_Positions['index']
 
-lmn=pd.merge(xyz,match[['id','season']],left_on='match_id_x',right_on='id',how='outer')
-Position_Importance = lmn[['season','batting_order','batsman_runs']]
-Position_Importance=Position_Importance.groupby(['season','batting_order'],as_index=False).agg({'batsman_runs':'sum'})
+lmn=pd.merge(xyz,deliveries[['match_id','Season']],left_on='match_id_x',right_on='match_id',how='outer')
+Position_Importance = lmn[['Season','batting_order','batsman_runs']]
+Position_Importance=Position_Importance.groupby(['Season','batting_order'],as_index=False).agg({'batsman_runs':'sum'})
 f, ax = plt.subplots(figsize=(10, 10))
-sns.lineplot(x='batting_order',y='batsman_runs',data=Position_Importance)#,hue='season')
+sns.lineplot(x='batting_order',y='batsman_runs',data=Position_Importance)#,hue='Season')
 
 
 ######### 
-lmn.drop(['match_id_y','inning_y','New_Joined_Field','Joined_Field','batsman_y','id'],axis=1,inplace=True)
+lmn.drop(['match_id_y','inning_y','New_Joined_Field','Joined_Field','batsman_y','match_id_x'],axis=1,inplace=True)
 Rank['match_id'] = Rank['match_id'].astype(int)
 Rank['match_id'].dtype
-lmn['new_field']= lmn['match_id_x'].astype(str)+'-'+lmn['batsman_x']
+lmn['new_field']= lmn['match_id'].astype(str)+'-'+lmn['batsman_x']
 Rank['new_field']= Rank['match_id'].astype(str)+'-'+Rank['Player_Name']
 lmn=pd.merge(lmn,Rank,left_on='new_field',right_on='new_field')
-lmn=lmn[['season','match_id','inning_x','batting_team','Player_Name','batting_order','batsman_runs','Batsman_points','new_field']]
+lmn=lmn[['Season','match_id_x','inning_x','batting_team','Player_Name','batting_order','batsman_runs','Batsman_points','new_field']]
 del Rank['new_field']
 
 f, ax = plt.subplots(figsize=(15, 10))
-sns.lineplot(x='match_id',y='batsman_runs',data=lmn,hue='Player_Name')
+sns.lineplot(x='match_id_x',y='batsman_runs',data=lmn,hue='Player_Name')
+
+##################################
+#Adding Player Label
+#All-Rounder
+bat=deliveries[['Season','batsman']].drop_duplicates()
+bowler=deliveries[['Season','bowler']].drop_duplicates()
+batsmans=pd.merge(bat,bowler,left_on=['Season','batsman'],right_on=['Season','bowler'],how='left')
+batsmans=batsmans.fillna(0)
+batsman=batsmans[batsmans["bowler"]==0][['Season','batsman']].drop_duplicates()
+del bat,bowler,batsmans
+batsman['Player_Label'] = 'All_Rounder'
+
+#WicketKeeper
+wkt=deliveries[deliveries["dismissal_kind"]=="stumped"][["Season","fielder"]].drop_duplicates()
+wkt['Player_Label'] = 'Wicket_Keeper'
+
+#Bowler
