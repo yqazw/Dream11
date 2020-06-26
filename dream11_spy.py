@@ -284,10 +284,11 @@ temp['New_Joined_Field'] = temp[['match_id', 'inning', 'batsman']].apply(lambda 
 temp1['New_Joined_Field'] = temp1[['match_id', 'inning', 'batsman']].apply(lambda x: '-'.join((x).astype(str)), axis=1)
 
 xyz=pd.merge(left=temp,right=temp1,left_on='New_Joined_Field',right_on='New_Joined_Field',how='outer')
-abc = abc[['batsman_x','batting_order','batsman_runs']]
+tmz = xyz[['match_id_x','batsman_x','batting_order']]
+xyz = xyz[['batsman_x','batting_order','batsman_runs']]
 
 #Positional Average Table >>> abc
-abc = abc.groupby(['batsman_x','batting_order'],as_index=False).agg({'batsman_runs':'mean'})
+abc = xyz.groupby(['batsman_x','batting_order'],as_index=False).agg({'batsman_runs':'mean'})
 
 Player_Positions = abc[abc.index .isin(abc.groupby('batsman_x',as_index=False)['batsman_runs'].idxmax())]
 Player_Positions = Player_Positions.reset_index()
@@ -303,15 +304,15 @@ sns.lineplot(x='batting_order',y='batsman_runs',data=Position_Importance)#,hue='
 ######### 
 lmn.drop(['match_id_y','inning_y','New_Joined_Field','Joined_Field','batsman_y','match_id_x'],axis=1,inplace=True)
 Rank['match_id'] = Rank['match_id'].astype(int)
-Rank['match_id'].dtype
 lmn['new_field']= lmn['match_id'].astype(str)+'-'+lmn['batsman_x']
 Rank['new_field']= Rank['match_id'].astype(str)+'-'+Rank['Player_Name']
 lmn=pd.merge(lmn,Rank,left_on='new_field',right_on='new_field')
 lmn=lmn[['Season','match_id_x','inning_x','batting_team','Player_Name','batting_order','batsman_runs','Batsman_points','new_field']]
 del Rank['new_field']
 
-f, ax = plt.subplots(figsize=(15, 10))
+f, ax = plt.subplots(figsize=(10, 10))
 sns.lineplot(x='match_id_x',y='batsman_runs',data=lmn,hue='Player_Name')
+
 
 ##################################
 #Adding Player Label
@@ -320,12 +321,40 @@ bat=deliveries[['Season','batsman']].drop_duplicates()
 bowler=deliveries[['Season','bowler']].drop_duplicates()
 batsmans=pd.merge(bat,bowler,left_on=['Season','batsman'],right_on=['Season','bowler'],how='left')
 batsmans=batsmans.fillna(0)
-batsman=batsmans[batsmans["bowler"]==0][['Season','batsman']].drop_duplicates()
+allrounder=batsmans[batsmans["bowler"]==0][['Season','batsman']].drop_duplicates()
 del bat,bowler,batsmans
-batsman['Player_Label'] = 'All_Rounder'
+allrounder['Player']=allrounder['batsman']
+allrounder['Player_Label'] = 'All_Rounder'
+del allrounder['batsman']
 
 #WicketKeeper
 wkt=deliveries[deliveries["dismissal_kind"]=="stumped"][["Season","fielder"]].drop_duplicates()
 wkt['Player_Label'] = 'Wicket_Keeper'
+wkt['Player']=wkt['fielder']
+del wkt['fielder']
 
-#Bowler
+#Batsmen and Bowlers
+tmz['Season']=tmz["match_id_x"].apply(Add_season)
+batnbowlmix = tmz.groupby(['Season','batsman_x'],as_index=False)['batting_order'].mean()
+batsman=pd.DataFrame(batnbowlmix[batnbowlmix['batting_order']<=7.5][['Season','batsman_x']].drop_duplicates())
+batsman['Player']=batsman["batsman_x"]
+batsman["Player_Label"]='batsman'
+
+bowler=pd.DataFrame(batnbowlmix[batnbowlmix['batting_order']>7.5][['Season','batsman_x']].drop_duplicates())
+bowler['Player']=bowler["batsman_x"]
+bowler["Player_Label"]='bowler'
+
+del batsman["batsman_x"]
+del bowler['batsman_x']
+
+#Assembling all the Player Labels in single Dataframe
+tempxxxx = wkt.append(allrounder)
+tempxxxx = tempxxxx.append(batsman)
+tempxxxx = tempxxxx.append(bowler)
+tempxxxx = tempxxxx[['Season','Player','Player_Label']]
+tempxxxx.drop_duplicates(subset=['Season','Player'],inplace=True)
+tempxxxx.sort_values(['Season','Player'],inplace=True)
+Player_List_Season_Wise = tempxxxx
+
+#Cleaning stuff
+del tempxxxx,tmz,batsman,bowler,wkt,allrounder,sixes,fours,batting_points,bowling_points,batnbowlmix,wickets
